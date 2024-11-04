@@ -1,6 +1,6 @@
 import java.io.*;
-import java.util.concurrent.*;
 import java.util.Scanner;
+import java.util.concurrent.*;
 
 public class App {
     public static void main(String[] args) throws IOException, InterruptedException {
@@ -42,13 +42,14 @@ public class App {
         long startTime = System.currentTimeMillis();
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
+            // String line; // Removed declaration from here
             int linesPerThread = 1000000;  // Adjust based on your needs
             BlockingQueue<String> lineQueue = new LinkedBlockingQueue<>();
 
             // Producer to read file and add lines to queue
             Thread producer = new Thread(() -> {
                 try {
+                    String line; // Declare line variable inside the producer thread
                     while ((line = reader.readLine()) != null) {
                         lineQueue.put(line);
                     }
