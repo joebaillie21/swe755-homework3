@@ -38,43 +38,49 @@ public class App {
             return;
         }
 
-        /**
-         * Split the file into chunks based on the size of the file and the number of
-         * threads
-         * Include remaining size to ensure all data is accounted for
-         */
-        long fileSize = file.length();
-        long chunkSize = fileSize / numThreads;
-        long remainingSize = fileSize % numThreads;
-
-        // Create the thread pool with the inputted amount of threads
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-        long start = 0;
-        long end = chunkSize;
-
         long startTime = System.currentTimeMillis();
-        // Create a new FileChunkReader for each chunk of the file
-        for (int i = 0; i < numThreads; i++) {
-            // Check if at the second the last chunk, if so, add the remaining size
-            if (i == numThreads - 1) {
-                end += remainingSize;
-            }
-            executor.submit(new FileChunkReader(file, start, end, fileType));
-            start = end;
-            end += chunkSize;
-        }
-        executor.shutdown();
-        try {
-            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-                executor.shutdownNow();
-                if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-                    System.err.println("Executor did not terminate");
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            int linesPerThread = 1000000;  // Adjust based on your needs
+            BlockingQueue<String> lineQueue = new LinkedBlockingQueue<>();
+
+            // Producer to read file and add lines to queue
+            Thread producer = new Thread(() -> {
+                try {
+                    while ((line = reader.readLine()) != null) {
+                        lineQueue.put(line);
+                    }
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
                 }
+            });
+            producer.start();
+
+            // Consumers to process lines from queue
+            for (int i = 0; i < numThreads; i++) {
+                executor.submit(() -> {
+                    try {
+                        String data;
+                        while ((data = lineQueue.poll(1, TimeUnit.SECONDS)) != null) {
+                            // Process data here
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                });
             }
-        } catch (InterruptedException ie) {
-            executor.shutdownNow();
-            Thread.currentThread().interrupt();
+            producer.join();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
+        executor.shutdown();
+        if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+            executor.shutdownNow();
+        }
+
         long endTime = System.currentTimeMillis();
         System.out.println("Time taken: " + (endTime - startTime) + "ms");
 
