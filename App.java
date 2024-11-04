@@ -30,6 +30,14 @@ public class App {
             return;
         }
 
+        System.out.println("What file type would you like to output? (txt, csv, json)");
+        String fileType = sc.next().trim();
+        if (!fileType.equals("txt") && !fileType.equals("csv") && !fileType.equals("json")) {
+            System.out.println("Invalid file type.");
+            sc.close();
+            return;
+        }
+
         /**
          * Split the file into chunks based on the size of the file and the number of
          * threads
@@ -51,7 +59,7 @@ public class App {
             if (i == numThreads - 1) {
                 end += remainingSize;
             }
-            executor.submit(new FileChunkReader(file, start, end));
+            executor.submit(new FileChunkReader(file, start, end, fileType));
             start = end;
             end += chunkSize;
         }

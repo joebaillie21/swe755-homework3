@@ -14,11 +14,16 @@ public class FileChunkReader implements Runnable {
     private File file;
     private long start;
     private long end;
+    private String fileType;
+    private String inputType;
 
-    public FileChunkReader(File file, long start, long end) {
+    public FileChunkReader(File file, long start, long end, String fileType) {
         this.file = file;
         this.start = start;
         this.end = end;
+        this.fileType = fileType;
+        inputType = file.getName().substring(file.getName().lastIndexOf(".") + 1); // Extract the file type from the
+                                                                                   // file name
     }
 
     /**
@@ -32,7 +37,14 @@ public class FileChunkReader implements Runnable {
      */
     public void run() {
         // Create a file called output.txt
-        File outputFile = new File("output.txt");
+        File outputFile = new File("output." + fileType);
+        if (outputFile.exists()) {
+            try (RandomAccessFile output = new RandomAccessFile(outputFile, "rw")) {
+                output.setLength(0); // Clear the file
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         // Read the chunk of the file from start to end
         try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
             // Set the buffer equal to the length of the chunk
